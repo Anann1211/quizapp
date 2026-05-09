@@ -27,7 +27,7 @@ export default function Home({ user }) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...config, previousQuestions })
+        body: JSON.stringify({ ...config, previousQuestions, topic: config.topic || '' })
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi tạo câu hỏi')
