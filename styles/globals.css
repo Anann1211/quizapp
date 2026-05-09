@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { font-family: 'Be Vietnam Pro', sans-serif; background: #f8f9fc; }
+
+.answer-btn {
+  @apply w-full text-left px-4 py-3 rounded-xl border-2 border-gray-200 bg-white
+    hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-200 font-medium text-gray-700;
+}
+.answer-correct {
+  @apply border-green-500 bg-green-50 text-green-800;
+}
+.answer-wrong {
+  @apply border-red-400 bg-red-50 text-red-700;
+}
+.answer-reveal {
+  @apply border-green-500 bg-green-50 text-green-800;
+}
