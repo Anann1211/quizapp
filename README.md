@@ -2,7 +2,7 @@
 
 ## Tổng quan
 Ứng dụng tạo bài trắc nghiệm từ tài liệu bằng Gemini AI.
-Tech stack: Next.js · Tailwind CSS · Supabase · Gemini 1.5 Flash
+Tech stack: Next.js · Tailwind CSS · Supabase · Gemini 2.5 Flash
 
 ---
 
