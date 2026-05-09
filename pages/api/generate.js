@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const result = await generateQuestions({
       text,
       imageBase64,
-      mimeType: mimeType, // Thay đổi từ fileMime thành mimeType lấy từ extractText
+      mimeType: imageBase64 ? fileMime : null,
       count: Math.min(parseInt(count) || 10, 50),
       type: type || 'multiple_choice',
       previousQuestions: previousQuestions || [],
