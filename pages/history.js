@@ -104,14 +104,27 @@ export default function History({ user }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-3 flex-shrink-0">
-                  <span className={`text-xl font-bold ${s.score >= 80 ? 'text-green-600' : s.score >= 60 ? 'text-indigo-600' : 'text-amber-500'}`}>
-                    {s.score}%
-                  </span>
+                  {/* Nếu chưa hoàn thành thì hiện nút Làm tiếp, ngược lại hiện điểm số */}
+                  {!s.is_finished ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Ngăn việc bấm nút này làm mở/đóng danh sách câu hỏi bên dưới
+                        router.push(`/?resumeId=${s.id}`);
+                      }}
+                      className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition"
+                    >
+                      Làm tiếp ➔
+                    </button>
+                  ) : (
+                    <span className={`text-xl font-bold ${s.score >= 80 ? 'text-green-600' : s.score >= 60 ? 'text-indigo-600' : 'text-amber-500'}`}>
+                      {s.score}%
+                    </span>
+                  )}
+                  
                   <span className={`text-gray-400 transition-transform duration-200 ${expanded === s.id ? 'rotate-180' : ''}`}>
                     ▾
                   </span>
                 </div>
-              </button>
 
               {/* Expandable question list */}
               {expanded === s.id && (
