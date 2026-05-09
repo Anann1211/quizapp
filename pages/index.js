@@ -10,7 +10,7 @@ import ResultScreen from '../components/ResultScreen'
 
 export default function Home({ user }) {
   const router = useRouter()
-  const [step, setStep] = useState('upload') // upload | loading | quiz | result
+  const [step, setStep] = useState('upload')
   const [fileConfig, setFileConfig] = useState(null)
   const [questions, setQuestions] = useState([])
   const [quizType, setQuizType] = useState('multiple_choice')
@@ -31,6 +31,7 @@ export default function Home({ user }) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Lỗi tạo câu hỏi')
+      if (!data.questions?.length) throw new Error('AI không tạo được câu hỏi, thử lại')
       setQuestions(data.questions)
       setQuizType(config.type)
       setStep('quiz')
@@ -42,28 +43,46 @@ export default function Home({ user }) {
 
   function handleReady(config) {
     setFileConfig(config)
+    setAllPrevQuestions([])
     generateQuestions(config, [])
+  }
+
+  async function saveSession({ correct, total, completed, current_index, answered_count }) {
+    await fetch('/api/save-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: user.id,
+        file_name: fileConfig.fileName,
+        quiz_type: quizType,
+        total,
+        correct: correct ?? 0,
+        questions,
+        completed: completed ?? true,
+        current_index: current_index ?? 0,
+        answered_count: answered_count ?? total,
+        file_config: fileConfig
+      })
+    })
   }
 
   async function handleFinish(res) {
     setResult(res)
     setAllPrevQuestions(prev => [...prev, ...questions.map(q => q.question || q.front)])
     setStep('result')
+    await saveSession({ ...res, completed: true })
+  }
 
-    if (user) {
-      await fetch('/api/save-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: user.id,
-          file_name: fileConfig.fileName,
-          quiz_type: quizType,
-          total: res.total,
-          correct: res.correct,
-          questions
-        })
-      })
-    }
+  async function handlePause(pauseState) {
+    await saveSession({
+      correct: pauseState.correct,
+      total: pauseState.total,
+      completed: false,
+      current_index: pauseState.current_index,
+      answered_count: pauseState.answered_count
+    })
+    setStep('upload')
+    setError('')
   }
 
   function handleContinue(newType) {
@@ -82,7 +101,6 @@ export default function Home({ user }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -92,25 +110,19 @@ export default function Home({ user }) {
             <span className="font-bold text-gray-800">QuizAI</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/history')}
-              className="text-sm text-gray-500 hover:text-indigo-600 transition">
-              Lịch sử
-            </button>
-            <button onClick={() => supabase.auth.signOut()}
-              className="text-sm text-gray-400 hover:text-red-500 transition">
-              Đăng xuất
-            </button>
+            <button onClick={() => router.push('/history')} className="text-sm text-gray-500 hover:text-indigo-600 transition">Lịch sử</button>
+            <button onClick={() => supabase.auth.signOut()} className="text-sm text-gray-400 hover:text-red-500 transition">Đăng xuất</button>
           </div>
         </div>
       </header>
 
-      {/* Steps */}
       {step === 'upload' && (
         <>
           {error && (
             <div className="max-w-2xl mx-auto px-4 pt-4">
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-                ⚠️ {error}
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex justify-between">
+                <span>⚠️ {error}</span>
+                <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">✕</button>
               </div>
             </div>
           )}
@@ -122,18 +134,18 @@ export default function Home({ user }) {
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <div className="w-14 h-14 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
           <p className="text-gray-600 font-medium">AI đang tạo câu hỏi...</p>
-          <p className="text-sm text-gray-400">Có thể mất 10–30 giây</p>
+          <p className="text-sm text-gray-400">Thường mất 10–20 giây</p>
         </div>
       )}
 
       {step === 'quiz' && quizType === 'multiple_choice' && (
-        <MultipleChoice questions={questions} onFinish={handleFinish} />
+        <MultipleChoice questions={questions} onFinish={handleFinish} onPause={handlePause} />
       )}
       {step === 'quiz' && quizType === 'essay' && (
-        <Essay questions={questions} onFinish={handleFinish} />
+        <Essay questions={questions} onFinish={handleFinish} onPause={handlePause} />
       )}
       {step === 'quiz' && quizType === 'flashcard' && (
-        <Flashcard questions={questions} onFinish={handleFinish} />
+        <Flashcard questions={questions} onFinish={handleFinish} onPause={handlePause} />
       )}
 
       {step === 'result' && (
