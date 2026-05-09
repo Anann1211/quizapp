@@ -7,6 +7,7 @@ export default function UploadStep({ onReady }) {
   const [file, setFile] = useState(null)
   const [count, setCount] = useState(10)
   const [type, setType] = useState('multiple_choice')
+  const [topic, setTopic] = useState('')
   const [drag, setDrag] = useState(false)
   const inputRef = useRef()
 
@@ -26,7 +27,7 @@ export default function UploadStep({ onReady }) {
     const reader = new FileReader()
     reader.onload = () => {
       const base64 = reader.result.split(',')[1]
-      onReady({ fileData: base64, fileName: file.name, fileMime: file.type, count, type })
+      onReady({ fileData: base64, fileName: file.name, fileMime: file.type, count, type, topic: topic.trim() })
     }
     reader.readAsDataURL(file)
   }
@@ -68,7 +69,30 @@ export default function UploadStep({ onReady }) {
         )}
       </div>
 
-      <div className="mt-8">
+      <div className="mt-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Chủ đề trọng tâm
+          <span className="ml-2 text-xs font-normal text-gray-400">(tuỳ chọn — bỏ trống để tạo tổng quát)</span>
+        </label>
+        <div className="relative">
+          <span className="absolute left-3 top-3 text-lg">🎯</span>
+          <input
+            type="text"
+            value={topic}
+            onChange={e => setTopic(e.target.value)}
+            placeholder="VD: Chương 3 — Quang hợp, Lịch sử chiến tranh thế giới, Hàm số bậc 2..."
+            className="w-full pl-10 pr-8 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-700 text-sm"
+          />
+          {topic && (
+            <button onClick={() => setTopic('')} className="absolute right-3 top-3 text-gray-300 hover:text-gray-500 text-lg leading-none">×</button>
+          )}
+        </div>
+        {topic && (
+          <p className="text-xs text-indigo-600 mt-1.5">✦ AI sẽ tập trung vào: <strong>{topic}</strong></p>
+        )}
+      </div>
+
+      <div className="mt-6">
         <label className="block text-sm font-semibold text-gray-700 mb-3">Loại câu hỏi</label>
         <div className="grid grid-cols-3 gap-3">
           {types.map(t => (
