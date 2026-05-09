@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
-export default function MultipleChoice({ questions, onFinish }) {
+export default function MultipleChoice({ questions, onFinish, onPause }) {
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState(null)
   const [answered, setAnswered] = useState([])
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false)
 
   const q = questions[current]
   const isAnswered = selected !== null
@@ -19,9 +20,20 @@ export default function MultipleChoice({ questions, onFinish }) {
       setCurrent(current + 1)
       setSelected(null)
     } else {
-      const correct = answered.filter(a => a.correct).length + (selected === q.correct ? 1 : 0)
-      onFinish({ correct, total: questions.length, answered: [...answered] })
+      const correct = answered.filter(a => a.correct).length
+      onFinish({ correct, total: questions.length, answered })
     }
+  }
+
+  function handlePause() {
+    const correct = answered.filter(a => a.correct).length
+    onPause({
+      correct,
+      total: questions.length,
+      answered,
+      current_index: current,
+      answered_count: answered.length
+    })
   }
 
   function getBtnClass(idx) {
@@ -33,14 +45,43 @@ export default function MultipleChoice({ questions, onFinish }) {
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
-      <div className="flex items-center justify-between mb-6">
-        <span className="text-sm font-medium text-gray-500">Câu {current + 1} / {questions.length}</span>
-        <div className="flex gap-1">
-          {questions.map((_, i) => (
-            <div key={i} className={`h-2 rounded-full transition-all
-              ${i < current ? 'w-4 bg-indigo-500' : i === current ? 'w-6 bg-indigo-400' : 'w-4 bg-gray-200'}`} />
-          ))}
+      {/* Pause confirm dialog */}
+      {showPauseConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Dừng làm bài?</h3>
+            <p className="text-gray-500 text-sm mb-5">Tiến độ sẽ được lưu vào Lịch sử. Bạn có thể làm tiếp sau.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowPauseConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition text-sm">
+                Tiếp tục làm
+              </button>
+              <button onClick={handlePause}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition text-sm">
+                Dừng & Lưu
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-gray-500">Câu {current + 1} / {questions.length}</span>
+          <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+            ✓ {answered.filter(a => a.correct).length} đúng
+          </span>
+        </div>
+        <button onClick={() => setShowPauseConfirm(true)}
+          className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition">
+          ⏸ Dừng
+        </button>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-6">
+        <div className="bg-indigo-500 h-1.5 rounded-full transition-all"
+          style={{ width: `${((current) / questions.length) * 100}%` }} />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
@@ -73,7 +114,7 @@ export default function MultipleChoice({ questions, onFinish }) {
           </p>
           {selected !== q.correct && (
             <p className="text-sm text-green-700 mt-2 font-medium">
-              ✅ Đáp án đúng: {q.options[q.correct]} — {q.explanation_correct}
+              ✅ Đáp án đúng: {q.options[q.correct]?.replace(/^[A-D]\.\s*/, '')} — {q.explanation_correct}
             </p>
           )}
         </div>
