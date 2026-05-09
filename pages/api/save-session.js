@@ -7,19 +7,23 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
+  const { id, user_id, file_name, quiz_type, total, correct, questions, is_finished, current_index, user_answers } = req.body
 
-  const { user_id, file_name, quiz_type, total, correct, questions } = req.body
-
-  const { data, error } = await supabase.from('quiz_sessions').insert({
-    user_id,
-    file_name,
-    quiz_type,
+  const payload = {
+    user_id, file_name, quiz_type,
     total_questions: total,
     correct_answers: correct,
-    score: Math.round((correct / total) * 100),
+    score: total > 0 ? Math.round((correct / total) * 100) : 0,
     questions_json: questions,
+    is_finished: is_finished ?? true,
+    current_index: current_index ?? 0,
+    user_answers: user_answers ?? [],
     created_at: new Date().toISOString()
-  }).select().single()
+  }
+
+  const { data, error } = id 
+    ? await supabase.from('quiz_sessions').update(payload).eq('id', id).select().single()
+    : await supabase.from('quiz_sessions').insert(payload).select().single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.status(200).json(data)
