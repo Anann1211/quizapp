@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   try {
-    const { fileData, fileName, fileMime, count, type, previousQuestions } = req.body
+    const { fileData, fileName, fileMime, count, type, previousQuestions, topic } = req.body
 
     if (!fileData) return res.status(400).json({ error: 'Không có file' })
 
@@ -20,7 +20,8 @@ export default async function handler(req, res) {
       mimeType: imageBase64 ? fileMime : null,
       count: Math.min(parseInt(count) || 10, 50),
       type: type || 'multiple_choice',
-      previousQuestions: previousQuestions || []
+      previousQuestions: previousQuestions || [],
+      topic: topic || ''
     })
 
     res.status(200).json(result)
