@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/router'
 
 const typeLabel = { multiple_choice: 'Trắc nghiệm', essay: 'Tự luận', flashcard: 'Flashcard' }
@@ -56,29 +55,33 @@ export default function History({ user }) {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
-  const [deleteConfirm, setDeleteConfirm] = useState(null) // id đang xác nhận xóa
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const router = useRouter()
 
   useEffect(() => {
     if (!user) { router.push('/'); return }
-    supabase.from('quiz_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .then(({ data }) => { setSessions(data || []); setLoading(false) })
+    fetchSessions()
   }, [user])
 
-  function toggle(id) {
-    setExpanded(prev => prev === id ? null : id)
-    setDeleteConfirm(null)
+  async function fetchSessions() {
+    const { data: { session } } = await import("../lib/supabase").then(m => m.supabase.auth.getSession())
+    const token = session?.access_token || ""
+    setLoading(true)
+    const res = await fetch('/api/get-sessions')
+    const data = await res.json()
+    setSessions(data.sessions || [])
+    setLoading(false)
   }
 
   async function handleDelete(id) {
     setDeleting(id)
-    const { error } = await supabase.from('quiz_sessions').delete().eq('id', id)
-    if (!error) {
+    const res = await fetch('/api/delete-session', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, user_id: user.id })
+    })
+    if (res.ok) {
       setSessions(prev => prev.filter(s => s.id !== id))
       if (expanded === id) setExpanded(null)
     }
@@ -99,7 +102,6 @@ export default function History({ user }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -108,8 +110,7 @@ export default function History({ user }) {
             </div>
             <span className="font-bold text-gray-800">QuizAI</span>
           </div>
-          <button onClick={() => router.push('/')}
-            className="text-sm text-indigo-600 hover:underline">← Trang chủ</button>
+          <button onClick={() => router.push('/')} className="text-sm text-indigo-600 hover:underline">← Trang chủ</button>
         </div>
       </header>
 
@@ -118,7 +119,9 @@ export default function History({ user }) {
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Lịch sử bài làm</h1>
             {!loading && sessions.length > 0 && (
-              <p className="text-sm text-gray-400 mt-0.5">{sessions.length} bài · {sessions.filter(s => s.completed === false).length} chưa xong</p>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {sessions.length} bài · {sessions.filter(s => s.completed === false).length} chưa xong
+              </p>
             )}
           </div>
         </div>
@@ -131,8 +134,7 @@ export default function History({ user }) {
           <div className="text-center py-16">
             <div className="text-5xl mb-4">📭</div>
             <p className="text-gray-400">Chưa có bài làm nào</p>
-            <button onClick={() => router.push('/')}
-              className="mt-4 text-sm text-indigo-600 hover:underline">Tạo bài ngay →</button>
+            <button onClick={() => router.push('/')} className="mt-4 text-sm text-indigo-600 hover:underline">Tạo bài ngay →</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -145,7 +147,6 @@ export default function History({ user }) {
                 <div key={s.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all
                   ${isExpanded ? 'border-indigo-200' : 'border-gray-100'}`}>
 
-                  {/* Row chính */}
                   <div className="p-4 flex items-center gap-3">
                     {/* Score badge */}
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold
@@ -156,11 +157,14 @@ export default function History({ user }) {
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => toggle(s.id)}>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+                      setExpanded(prev => prev === s.id ? null : s.id)
+                      setDeleteConfirm(null)
+                    }}>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-semibold text-gray-800 text-sm truncate max-w-[200px]">{s.file_name}</p>
+                        <p className="font-semibold text-gray-800 text-sm truncate max-w-[180px]">{s.file_name}</p>
                         {isIncomplete && (
-                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">⏸ Chưa xong</span>
+                          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">⏸ Chưa xong</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -169,12 +173,11 @@ export default function History({ user }) {
                       </p>
                     </div>
 
-                    {/* Action buttons */}
+                    {/* Buttons */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {/* Làm tiếp — hiện cho cả bài chưa xong VÀ bài đã xong */}
+                      {/* Làm tiếp / Làm lại */}
                       <button
                         onClick={e => { e.stopPropagation(); handleResume(s) }}
-                        title={isIncomplete ? 'Làm tiếp' : 'Làm lại'}
                         className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition
                           ${isIncomplete
                             ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -186,8 +189,7 @@ export default function History({ user }) {
                       {!isDeleteConfirming ? (
                         <button
                           onClick={e => { e.stopPropagation(); setDeleteConfirm(s.id) }}
-                          title="Xóa"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition">
+                          className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition text-base">
                           🗑
                         </button>
                       ) : (
@@ -197,18 +199,19 @@ export default function History({ user }) {
                             onClick={() => handleDelete(s.id)}
                             disabled={deleting === s.id}
                             className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg transition disabled:opacity-50">
-                            {deleting === s.id ? '...' : 'Xóa'}
+                            {deleting === s.id ? '...' : 'Có'}
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(null)}
-                            className="text-xs border border-gray-200 px-2 py-1 rounded-lg hover:bg-gray-50 transition text-gray-500">
-                            Hủy
+                            className="text-xs border border-gray-200 px-2 py-1 rounded-lg hover:bg-gray-50 text-gray-500">
+                            Không
                           </button>
                         </div>
                       )}
 
                       {/* Toggle expand */}
-                      <button onClick={() => toggle(s.id)}
+                      <button
+                        onClick={() => { setExpanded(prev => prev === s.id ? null : s.id); setDeleteConfirm(null) }}
                         className={`w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition
                           ${isExpanded ? 'bg-indigo-50 text-indigo-500' : ''}`}>
                         <span className={`transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
@@ -216,7 +219,6 @@ export default function History({ user }) {
                     </div>
                   </div>
 
-                  {/* Expanded questions */}
                   {isExpanded && (
                     <div className="px-4 pb-4 border-t border-gray-50">
                       <QuestionReview questions={s.questions_json} type={s.quiz_type} />
