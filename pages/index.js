@@ -83,7 +83,8 @@ export default function Home({ user }) {
   }
 
   async function saveSession({ correct, total, completed, current_index, answered_count }) {
-    if (isSaving.current) return
+    // Chỉ chặn duplicate khi đang lưu bài hoàn thành
+    if (completed !== false && isSaving.current) return
     isSaving.current = true
     try {
       await fetch('/api/save-session', {
@@ -103,7 +104,7 @@ export default function Home({ user }) {
         })
       })
     } finally {
-      if (completed === false) isSaving.current = false
+      isSaving.current = false // luôn reset sau khi lưu xong
     }
   }
 
@@ -115,6 +116,7 @@ export default function Home({ user }) {
   }
 
   async function handlePause(pauseState) {
+    isSaving.current = false // reset trước khi lưu pause
     await saveSession({
       correct: pauseState.correct,
       total: pauseState.total,
