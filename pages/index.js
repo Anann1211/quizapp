@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
@@ -14,17 +14,50 @@ export default function Home({ user }) {
   const [fileConfig, setFileConfig] = useState(null)
   const [questions, setQuestions] = useState([])
   const [quizType, setQuizType] = useState('multiple_choice')
+  const [resumeStartIndex, setResumeStartIndex] = useState(0)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [allPrevQuestions, setAllPrevQuestions] = useState([])
-  const isSaving = useRef(false) // chống lưu nhiều lần
+  const isSaving = useRef(false)
+
+  // Xử lý resume khi vào trang với ?resume=1
+  useEffect(() => {
+    if (!router.isReady || !user) return
+    if (router.query.resume !== '1') return
+
+    try {
+      const raw = sessionStorage.getItem('resume_session')
+      if (!raw) { router.replace('/'); return }
+
+      const session = JSON.parse(raw)
+      sessionStorage.removeItem('resume_session')
+
+      const qs = session.questions || []
+      const startIdx = parseInt(session.current_index) || 0
+      const fc = session.file_config || { fileName: 'Tài liệu đã lưu' }
+
+      if (!qs.length) { router.replace('/'); return }
+
+      setQuestions(qs)
+      setQuizType(session.quiz_type || 'multiple_choice')
+      setFileConfig({ ...fc, type: session.quiz_type || 'multiple_choice' })
+      setResumeStartIndex(startIdx)
+      isSaving.current = false
+      setStep('quiz')
+      router.replace('/', undefined, { shallow: true })
+    } catch (e) {
+      console.error('Resume lỗi:', e)
+      router.replace('/')
+    }
+  }, [router.isReady, router.query.resume, user])
 
   if (!user) return <Auth />
 
-  async function generateQuestions(config, previousQuestions = []) {
+  async function doGenerate(config, previousQuestions = []) {
     setStep('loading')
     setError('')
-    isSaving.current = false // reset khi bắt đầu bài mới
+    isSaving.current = false
+    setResumeStartIndex(0)
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -46,11 +79,11 @@ export default function Home({ user }) {
   function handleReady(config) {
     setFileConfig(config)
     setAllPrevQuestions([])
-    generateQuestions(config, [])
+    doGenerate(config, [])
   }
 
   async function saveSession({ correct, total, completed, current_index, answered_count }) {
-    if (isSaving.current) return // chặn gọi 2 lần
+    if (isSaving.current) return
     isSaving.current = true
     try {
       await fetch('/api/save-session', {
@@ -58,7 +91,7 @@ export default function Home({ user }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
-          file_name: fileConfig.fileName,
+          file_name: fileConfig?.fileName || 'Tài liệu',
           quiz_type: quizType,
           total,
           correct: correct ?? 0,
@@ -70,7 +103,6 @@ export default function Home({ user }) {
         })
       })
     } finally {
-      // Chỉ reset nếu là bài tạm dừng (để có thể lưu lại nếu cần)
       if (completed === false) isSaving.current = false
     }
   }
@@ -91,19 +123,19 @@ export default function Home({ user }) {
       answered_count: pauseState.answered_count
     })
     setStep('upload')
-    setError('')
   }
 
   function handleContinue(newType) {
-    generateQuestions({ ...fileConfig, type: newType }, allPrevQuestions)
+    setResumeStartIndex(0)
+    doGenerate({ ...fileConfig, type: newType }, allPrevQuestions)
   }
 
   function handleExport() {
-    const blob = new Blob([JSON.stringify({ questions, type: quizType, file: fileConfig.fileName }, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify({ questions, type: quizType, file: fileConfig?.fileName }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `quiz_${fileConfig.fileName}_${Date.now()}.json`
+    a.download = `quiz_${fileConfig?.fileName}_${Date.now()}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -129,9 +161,9 @@ export default function Home({ user }) {
         <>
           {error && (
             <div className="max-w-2xl mx-auto px-4 pt-4">
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex justify-between">
+              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex justify-between items-center">
                 <span>⚠️ {error}</span>
-                <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">✕</button>
+                <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 ml-3">✕</button>
               </div>
             </div>
           )}
@@ -148,13 +180,13 @@ export default function Home({ user }) {
       )}
 
       {step === 'quiz' && quizType === 'multiple_choice' && (
-        <MultipleChoice questions={questions} onFinish={handleFinish} onPause={handlePause} />
+        <MultipleChoice questions={questions} startIndex={resumeStartIndex} onFinish={handleFinish} onPause={handlePause} />
       )}
       {step === 'quiz' && quizType === 'essay' && (
-        <Essay questions={questions} onFinish={handleFinish} onPause={handlePause} />
+        <Essay questions={questions} startIndex={resumeStartIndex} onFinish={handleFinish} onPause={handlePause} />
       )}
       {step === 'quiz' && quizType === 'flashcard' && (
-        <Flashcard questions={questions} onFinish={handleFinish} onPause={handlePause} />
+        <Flashcard questions={questions} startIndex={resumeStartIndex} onFinish={handleFinish} onPause={handlePause} />
       )}
 
       {step === 'result' && (
@@ -163,7 +195,7 @@ export default function Home({ user }) {
           fileConfig={fileConfig}
           onContinue={handleContinue}
           onExport={handleExport}
-          onHome={() => { setStep('upload'); setAllPrevQuestions([]) }}
+          onHome={() => { setStep('upload'); setAllPrevQuestions([]); setResumeStartIndex(0) }}
         />
       )}
     </div>
