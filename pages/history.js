@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
+import { supabase } from '../lib/supabase'
 
 const typeLabel = { multiple_choice: 'Trắc nghiệm', essay: 'Tự luận', flashcard: 'Flashcard' }
 
@@ -65,25 +66,35 @@ export default function History({ user }) {
   }, [user])
 
   async function fetchSessions() {
-    const { data: { session } } = await import("../lib/supabase").then(m => m.supabase.auth.getSession())
-    const token = session?.access_token || ""
     setLoading(true)
-    const res = await fetch('/api/get-sessions')
-    const data = await res.json()
-    setSessions(data.sessions || [])
+    const { data, error } = await supabase
+      .from('quiz_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (!error) setSessions(data || [])
     setLoading(false)
   }
 
   async function handleDelete(id) {
     setDeleting(id)
-    const res = await fetch('/api/delete-session', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, user_id: user.id })
-    })
-    if (res.ok) {
+    const { error } = await supabase
+      .from('quiz_sessions')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+    if (!error) {
       setSessions(prev => prev.filter(s => s.id !== id))
       if (expanded === id) setExpanded(null)
+    } else {
+      // Fallback: dùng API server nếu RLS chặn
+      const res = await fetch('/api/delete-session', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, user_id: user.id })
+      })
+      if (res.ok) setSessions(prev => prev.filter(s => s.id !== id))
     }
     setDeleting(null)
     setDeleteConfirm(null)
@@ -148,7 +159,6 @@ export default function History({ user }) {
                   ${isExpanded ? 'border-indigo-200' : 'border-gray-100'}`}>
 
                   <div className="p-4 flex items-center gap-3">
-                    {/* Score badge */}
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold
                       ${isIncomplete ? 'bg-amber-100 text-amber-700' :
                         s.score >= 80 ? 'bg-green-100 text-green-700' :
@@ -156,7 +166,6 @@ export default function History({ user }) {
                       {isIncomplete ? '⏸' : `${s.score}%`}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
                       setExpanded(prev => prev === s.id ? null : s.id)
                       setDeleteConfirm(null)
@@ -173,9 +182,7 @@ export default function History({ user }) {
                       </p>
                     </div>
 
-                    {/* Buttons */}
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {/* Làm tiếp / Làm lại */}
                       <button
                         onClick={e => { e.stopPropagation(); handleResume(s) }}
                         className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition
@@ -185,7 +192,6 @@ export default function History({ user }) {
                         {isIncomplete ? '▶ Làm tiếp' : '↺ Làm lại'}
                       </button>
 
-                      {/* Xóa */}
                       {!isDeleteConfirming ? (
                         <button
                           onClick={e => { e.stopPropagation(); setDeleteConfirm(s.id) }}
@@ -209,7 +215,6 @@ export default function History({ user }) {
                         </div>
                       )}
 
-                      {/* Toggle expand */}
                       <button
                         onClick={() => { setExpanded(prev => prev === s.id ? null : s.id); setDeleteConfirm(null) }}
                         className={`w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition
