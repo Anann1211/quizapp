@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import Auth from '../components/Auth'
@@ -17,12 +17,14 @@ export default function Home({ user }) {
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const [allPrevQuestions, setAllPrevQuestions] = useState([])
+  const isSaving = useRef(false) // chống lưu nhiều lần
 
   if (!user) return <Auth />
 
   async function generateQuestions(config, previousQuestions = []) {
     setStep('loading')
     setError('')
+    isSaving.current = false // reset khi bắt đầu bài mới
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -48,22 +50,29 @@ export default function Home({ user }) {
   }
 
   async function saveSession({ correct, total, completed, current_index, answered_count }) {
-    await fetch('/api/save-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: user.id,
-        file_name: fileConfig.fileName,
-        quiz_type: quizType,
-        total,
-        correct: correct ?? 0,
-        questions,
-        completed: completed ?? true,
-        current_index: current_index ?? 0,
-        answered_count: answered_count ?? total,
-        file_config: fileConfig
+    if (isSaving.current) return // chặn gọi 2 lần
+    isSaving.current = true
+    try {
+      await fetch('/api/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          file_name: fileConfig.fileName,
+          quiz_type: quizType,
+          total,
+          correct: correct ?? 0,
+          questions,
+          completed: completed ?? true,
+          current_index: current_index ?? 0,
+          answered_count: answered_count ?? total,
+          file_config: fileConfig
+        })
       })
-    })
+    } finally {
+      // Chỉ reset nếu là bài tạm dừng (để có thể lưu lại nếu cần)
+      if (completed === false) isSaving.current = false
+    }
   }
 
   async function handleFinish(res) {
