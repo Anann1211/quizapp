@@ -20,28 +20,21 @@ export default function Home({ user }) {
   const [allPrevQuestions, setAllPrevQuestions] = useState([])
   const isSaving = useRef(false)
 
-  // Xử lý resume khi vào trang với ?resume=1
   useEffect(() => {
     if (!router.isReady || !user) return
     if (router.query.resume !== '1') return
-
     try {
       const raw = sessionStorage.getItem('resume_session')
       if (!raw) { router.replace('/'); return }
-
       const session = JSON.parse(raw)
       sessionStorage.removeItem('resume_session')
-
       const qs = session.questions || []
-      const startIdx = parseInt(session.current_index) || 0
-      const fc = session.file_config || { fileName: 'Tài liệu đã lưu' }
-
       if (!qs.length) { router.replace('/'); return }
-
+      const fc = session.file_config || { fileName: 'Tài liệu đã lưu' }
       setQuestions(qs)
       setQuizType(session.quiz_type || 'multiple_choice')
       setFileConfig({ ...fc, type: session.quiz_type || 'multiple_choice' })
-      setResumeStartIndex(startIdx)
+      setResumeStartIndex(parseInt(session.current_index) || 0)
       isSaving.current = false
       setStep('quiz')
       router.replace('/', undefined, { shallow: true })
@@ -82,12 +75,11 @@ export default function Home({ user }) {
     doGenerate(config, [])
   }
 
-  async function saveSession({ correct, total, completed, current_index, answered_count }) {
-    // Chỉ chặn duplicate khi đang lưu bài hoàn thành
-    if (completed !== false && isSaving.current) return
+  async function saveSession({ correct, total, completed, current_index, answered_count, answeredMap }) {
+    if (isSaving.current) return
     isSaving.current = true
     try {
-      await fetch('/api/save-session', {
+      const res = await fetch('/api/save-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,11 +92,15 @@ export default function Home({ user }) {
           completed: completed ?? true,
           current_index: current_index ?? 0,
           answered_count: answered_count ?? total,
-          file_config: fileConfig
+          file_config: fileConfig,
+          answered_map: answeredMap ?? null  // lưu progress chi tiết
         })
       })
+      if (!res.ok) console.error('Save failed:', await res.text())
+    } catch(e) {
+      console.error('saveSession error:', e)
     } finally {
-      isSaving.current = false // luôn reset sau khi lưu xong
+      isSaving.current = false
     }
   }
 
@@ -116,13 +112,15 @@ export default function Home({ user }) {
   }
 
   async function handlePause(pauseState) {
-    isSaving.current = false // reset trước khi lưu pause
+    // isSaving đã được reset bởi caller nếu cần, ta cũng reset ở đây
+    isSaving.current = false
     await saveSession({
       correct: pauseState.correct,
       total: pauseState.total,
       completed: false,
       current_index: pauseState.current_index,
-      answered_count: pauseState.answered_count
+      answered_count: pauseState.answered_count,
+      answeredMap: pauseState.answeredMap
     })
     setStep('upload')
   }
