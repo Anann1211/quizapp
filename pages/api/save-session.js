@@ -8,7 +8,10 @@ const supabase = createClient(
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { user_id, file_name, quiz_type, total, correct, questions, answered_count, completed, current_index, file_config } = req.body
+  const { user_id, file_name, quiz_type, total, correct, questions,
+          answered_count, completed, current_index, file_config, answered_map } = req.body
+
+  if (!user_id) return res.status(400).json({ error: 'Thiếu user_id' })
 
   const { data, error } = await supabase.from('quiz_sessions').insert({
     user_id,
@@ -18,13 +21,17 @@ export default async function handler(req, res) {
     correct_answers: correct ?? 0,
     score: total > 0 && correct != null ? Math.round((correct / total) * 100) : 0,
     questions_json: questions,
-    answered_count: answered_count ?? total,
+    answered_count: answered_count ?? (completed ? total : 0),
     completed: completed ?? true,
     current_index: current_index ?? 0,
     file_config_json: file_config ?? null,
+    answered_map_json: answered_map ?? null,
     created_at: new Date().toISOString()
   }).select().single()
 
-  if (error) return res.status(500).json({ error: error.message })
+  if (error) {
+    console.error('Supabase insert error:', error)
+    return res.status(500).json({ error: error.message })
+  }
   res.status(200).json(data)
 }
