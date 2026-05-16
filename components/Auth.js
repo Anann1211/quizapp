@@ -24,45 +24,131 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-white text-2xl">✦</span>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      position: 'relative',
+      zIndex: 1
+    }}>
+      {/* Ambient glow */}
+      <div style={{
+        position: 'fixed', top: '30%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: 600, height: 600,
+        background: 'radial-gradient(ellipse, rgba(74,158,255,0.06) 0%, transparent 70%)',
+        pointerEvents: 'none'
+      }} />
+
+      <div className="animate-fade-up" style={{ width: '100%', maxWidth: 420 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            marginBottom: 32
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              background: 'linear-gradient(135deg, rgba(74,158,255,0.3), rgba(139,92,246,0.3))',
+              border: '1px solid rgba(74,158,255,0.3)',
+              borderRadius: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16
+            }}>✦</div>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1rem', fontWeight: 500, letterSpacing: '-0.01em', color: 'rgba(255,255,255,0.9)' }}>
+              bloom academy
+            </span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">QuizAI</h1>
-          <p className="text-gray-500 text-sm mt-1">Tạo bài trắc nghiệm từ tài liệu của bạn</p>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.03em' }}>
+            {mode === 'login' ? 'Welcome back' : 'Create account'}
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" }}>
+            {mode === 'login' ? 'Sign in to continue learning' : 'Start your learning journey'}
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email" required placeholder="Email"
-            value={email} onChange={e => setEmail(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-700"
-          />
-          <input
-            type="password" required placeholder="Mật khẩu"
-            value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-700"
-          />
-          {msg && <p className="text-sm text-center text-indigo-600">{msg}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition disabled:opacity-50"
-          >
-            {loading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản'}
-          </button>
-        </form>
+        {/* Form panel */}
+        <div className="glass-strong" style={{ padding: '32px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', marginBottom: 8, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Email
+              </label>
+              <input
+                type="email" required placeholder="your@email.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                className="input-glass"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)', marginBottom: 8, fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                Password
+              </label>
+              <input
+                type="password" required placeholder="••••••••"
+                value={password} onChange={e => setPassword(e.target.value)}
+                className="input-glass"
+              />
+            </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          {mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'}{' '}
-          <button
-            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMsg('') }}
-            className="text-indigo-600 font-medium hover:underline"
-          >
-            {mode === 'login' ? 'Đăng ký' : 'Đăng nhập'}
-          </button>
-        </p>
+            {msg && (
+              <div style={{
+                padding: '10px 14px',
+                background: msg.includes('email') ? 'rgba(74,158,255,0.08)' : 'rgba(239,68,68,0.08)',
+                border: `1px solid ${msg.includes('email') ? 'rgba(74,158,255,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                borderRadius: 10,
+                fontSize: '0.85rem',
+                color: msg.includes('email') ? 'rgba(147,210,255,0.9)' : 'rgba(252,165,165,0.9)'
+              }}>
+                {msg}
+              </div>
+            )}
+
+            <button
+              type="submit" disabled={loading}
+              style={{
+                marginTop: 8,
+                padding: '13px',
+                background: loading ? 'rgba(74,158,255,0.1)' : 'rgba(74,158,255,0.15)',
+                border: '1px solid rgba(74,158,255,0.3)',
+                borderRadius: 100,
+                color: 'rgba(255,255,255,0.9)',
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+              onMouseEnter={e => !loading && (e.target.style.background = 'rgba(74,158,255,0.22)')}
+              onMouseLeave={e => !loading && (e.target.style.background = 'rgba(74,158,255,0.15)')}
+            >
+              {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, paddingTop: 24, textAlign: 'center' }}>
+            <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.35)' }}>
+              {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+            </span>
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMsg('') }}
+              style={{
+                fontSize: '0.875rem',
+                color: 'rgba(74,158,255,0.85)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                fontWeight: 500
+              }}
+            >
+              {mode === 'login' ? 'Sign up' : 'Sign in'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
