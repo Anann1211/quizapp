@@ -21,39 +21,79 @@ export default function Essay({ questions, onFinish }) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <span className="text-sm text-gray-500 font-medium">Câu {current + 1} / {questions.length}</span>
-        <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">Tự luận</span>
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)' }}>
+          {current + 1} <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span> {questions.length}
+        </span>
+        <span style={{
+          padding: '3px 12px', borderRadius: 100,
+          background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)',
+          fontSize: '0.775rem', color: 'rgba(196,181,253,0.8)'
+        }}>Essay</span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800">{q.question}</h3>
+      <div className="progress-track" style={{ marginBottom: 32 }}>
+        <div className="progress-fill" style={{ width: `${(current / questions.length) * 100}%` }} />
+      </div>
+
+      <div className="glass" style={{ padding: 28, marginBottom: 20 }}>
+        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Question {current + 1}</div>
+        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6, color: 'rgba(255,255,255,0.9)' }}>{q.question}</h3>
       </div>
 
       <textarea
         value={answer}
         onChange={e => setAnswer(e.target.value)}
-        placeholder="Nhập câu trả lời của bạn..."
+        placeholder="Write your answer here..."
         rows={6}
-        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-gray-700 resize-none mb-4"
+        className="input-glass"
+        style={{ marginBottom: 16, padding: '16px' }}
       />
 
-      <button onClick={() => setShowSample(!showSample)}
-        className="text-sm text-indigo-600 hover:underline mb-4 block">
-        {showSample ? 'Ẩn gợi ý' : '💡 Xem gợi ý đáp án'}
+      <button
+        onClick={() => setShowSample(!showSample)}
+        style={{
+          background: 'none', border: 'none',
+          color: 'rgba(147,210,255,0.6)', fontSize: '0.875rem',
+          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+          marginBottom: 16, display: 'block',
+          transition: 'color 0.2s'
+        }}
+        onMouseEnter={e => e.target.style.color = 'rgba(147,210,255,0.9)'}
+        onMouseLeave={e => e.target.style.color = 'rgba(147,210,255,0.6)'}
+      >
+        {showSample ? '↑ Hide hint' : '💡 Show sample answer'}
       </button>
 
       {showSample && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4">
-          <p className="text-sm font-semibold text-indigo-700 mb-1">Gợi ý đáp án:</p>
-          <p className="text-sm text-gray-700">{q.sample_answer}</p>
+        <div style={{
+          padding: '16px 20px', borderRadius: 14, marginBottom: 20,
+          background: 'rgba(74,158,255,0.06)',
+          border: '1px solid rgba(74,158,255,0.15)'
+        }}>
+          <p style={{ fontSize: '0.775rem', fontWeight: 600, color: 'rgba(147,210,255,0.8)', marginBottom: 8, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Sample Answer</p>
+          <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.65 }}>{q.sample_answer}</p>
         </div>
       )}
 
-      <button onClick={next}
-        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition">
-        {current + 1 < questions.length ? 'Câu tiếp theo →' : 'Hoàn thành ✓'}
+      <button
+        onClick={next}
+        style={{
+          width: '100%', padding: '13px',
+          background: 'rgba(74,158,255,0.12)',
+          border: '1px solid rgba(74,158,255,0.25)',
+          borderRadius: 100,
+          color: 'rgba(255,255,255,0.9)',
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: '0.95rem', fontWeight: 500,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.12)'; e.currentTarget.style.transform = 'none' }}
+      >
+        {current + 1 < questions.length ? 'Next Question →' : 'Complete ✦'}
       </button>
     </div>
   )
