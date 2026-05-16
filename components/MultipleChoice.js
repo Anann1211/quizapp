@@ -27,103 +27,158 @@ export default function MultipleChoice({ questions, onFinish, onPause }) {
 
   function handlePause() {
     const correct = answered.filter(a => a.correct).length
-    onPause({
-      correct,
-      total: questions.length,
-      answered,
-      current_index: current,
-      answered_count: answered.length
-    })
+    onPause({ correct, total: questions.length, answered, current_index: current, answered_count: answered.length })
   }
 
   function getBtnClass(idx) {
     if (!isAnswered) return 'answer-btn'
     if (idx === q.correct) return 'answer-btn answer-correct'
     if (idx === selected && selected !== q.correct) return 'answer-btn answer-wrong'
-    return 'answer-btn opacity-50'
+    return 'answer-btn'
   }
 
+  const progress = ((current) / questions.length) * 100
+
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      {/* Pause confirm dialog */}
+    <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
+      {/* Pause dialog */}
       {showPauseConfirm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-bold text-gray-800 text-lg mb-2">Dừng làm bài?</h3>
-            <p className="text-gray-500 text-sm mb-5">Tiến độ sẽ được lưu vào Lịch sử. Bạn có thể làm tiếp sau.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowPauseConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition text-sm">
-                Tiếp tục làm
-              </button>
-              <button onClick={handlePause}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-medium transition text-sm">
-                Dừng & Lưu
-              </button>
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+          backdropFilter: 'blur(8px)'
+        }}>
+          <div className="glass-strong" style={{ width: '100%', maxWidth: 380, padding: 32 }}>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', fontWeight: 600, marginBottom: 8 }}>Pause session?</h3>
+            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.45)', marginBottom: 28, lineHeight: 1.6 }}>Your progress will be saved to History. You can resume later.</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowPauseConfirm(false)} style={{
+                flex: 1, padding: '11px', borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)',
+                color: 'rgba(255,255,255,0.65)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif"
+              }}>Keep Going</button>
+              <button onClick={handlePause} style={{
+                flex: 1, padding: '11px', borderRadius: 12,
+                border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.1)',
+                color: 'rgba(252,165,165,0.9)', fontSize: '0.875rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif"
+              }}>Save & Exit</button>
             </div>
           </div>
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-500">Câu {current + 1} / {questions.length}</span>
-          <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-            ✓ {answered.filter(a => a.correct).length} đúng
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>
+            {current + 1} <span style={{ color: 'rgba(255,255,255,0.2)' }}>/</span> {questions.length}
+          </span>
+          <span style={{
+            padding: '3px 10px', borderRadius: 100,
+            background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)',
+            fontSize: '0.775rem', color: 'rgba(110,231,183,0.85)'
+          }}>
+            ✓ {answered.filter(a => a.correct).length} correct
           </span>
         </div>
-        <button onClick={() => setShowPauseConfirm(true)}
-          className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition">
-          ⏸ Dừng
-        </button>
+        <button
+          onClick={() => setShowPauseConfirm(true)}
+          style={{
+            padding: '6px 14px', borderRadius: 100,
+            border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)',
+            color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif",
+            transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'; e.currentTarget.style.color = 'rgba(252,165,165,0.8)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)' }}
+        >⏸ Pause</button>
       </div>
 
-      {/* Progress bar */}
-      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-6">
-        <div className="bg-indigo-500 h-1.5 rounded-full transition-all"
-          style={{ width: `${((current) / questions.length) * 100}%` }} />
+      {/* Progress */}
+      <div className="progress-track" style={{ marginBottom: 32 }}>
+        <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-800 leading-relaxed">{q.question}</h3>
+      {/* Question */}
+      <div className="glass" style={{ padding: 28, marginBottom: 16 }}>
+        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Question {current + 1}</div>
+        <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.05rem', fontWeight: 500, lineHeight: 1.6, color: 'rgba(255,255,255,0.9)' }}>{q.question}</h3>
       </div>
 
-      <div className="space-y-3 mb-6">
+      {/* Options */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
         {q.options.map((opt, idx) => (
-          <button key={idx} onClick={() => choose(idx)} className={getBtnClass(idx)}>
-            <span className="inline-flex items-center gap-3">
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0
-                ${!isAnswered ? 'bg-gray-100 text-gray-500' :
-                  idx === q.correct ? 'bg-green-500 text-white' :
-                  idx === selected ? 'bg-red-400 text-white' : 'bg-gray-100 text-gray-400'}`}>
+          <button key={idx} onClick={() => choose(idx)} className={getBtnClass(idx)}
+            style={{ opacity: isAnswered && idx !== q.correct && idx !== selected ? 0.4 : 1 }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+              <span style={{
+                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '0.8rem', fontWeight: 600,
+                background: !isAnswered ? 'rgba(255,255,255,0.06)'
+                  : idx === q.correct ? 'rgba(16,185,129,0.2)'
+                  : idx === selected ? 'rgba(239,68,68,0.2)'
+                  : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${!isAnswered ? 'rgba(255,255,255,0.08)'
+                  : idx === q.correct ? 'rgba(16,185,129,0.3)'
+                  : idx === selected ? 'rgba(239,68,68,0.3)'
+                  : 'rgba(255,255,255,0.06)'}`,
+                color: !isAnswered ? 'rgba(255,255,255,0.4)'
+                  : idx === q.correct ? 'rgba(110,231,183,0.9)'
+                  : idx === selected ? 'rgba(252,165,165,0.9)'
+                  : 'rgba(255,255,255,0.2)'
+              }}>
                 {['A','B','C','D'][idx]}
               </span>
-              {opt.replace(/^[A-D]\.\s*/, '')}
+              <span>{opt.replace(/^[A-D]\.\s*/, '')}</span>
             </span>
           </button>
         ))}
       </div>
 
+      {/* Feedback */}
       {isAnswered && (
-        <div className={`rounded-xl p-4 mb-6 border ${selected === q.correct ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <p className={`font-semibold mb-1 ${selected === q.correct ? 'text-green-700' : 'text-red-700'}`}>
-            {selected === q.correct ? '✅ Chính xác!' : '❌ Chưa đúng'}
+        <div style={{
+          padding: '16px 20px', borderRadius: 14, marginBottom: 16,
+          background: selected === q.correct ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
+          border: `1px solid ${selected === q.correct ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`
+        }}>
+          <p style={{
+            fontWeight: 500, marginBottom: 6, fontSize: '0.9rem',
+            color: selected === q.correct ? 'rgba(110,231,183,0.9)' : 'rgba(252,165,165,0.9)'
+          }}>
+            {selected === q.correct ? '✓ Correct!' : '✗ Not quite'}
           </p>
-          <p className="text-sm text-gray-700">
+          <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.6 }}>
             {selected === q.correct ? q.explanation_correct : q.explanation_wrong}
           </p>
           {selected !== q.correct && (
-            <p className="text-sm text-green-700 mt-2 font-medium">
-              ✅ Đáp án đúng: {q.options[q.correct]?.replace(/^[A-D]\.\s*/, '')} — {q.explanation_correct}
+            <p style={{ fontSize: '0.85rem', color: 'rgba(110,231,183,0.75)', marginTop: 8, lineHeight: 1.5 }}>
+              ✓ Correct: {q.options[q.correct]?.replace(/^[A-D]\.\s*/, '')} — {q.explanation_correct}
             </p>
           )}
         </div>
       )}
 
       {isAnswered && (
-        <button onClick={next}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition">
-          {current + 1 < questions.length ? 'Câu tiếp theo →' : 'Xem kết quả 🎯'}
+        <button
+          onClick={next}
+          style={{
+            width: '100%', padding: '13px',
+            background: 'rgba(74,158,255,0.12)',
+            border: '1px solid rgba(74,158,255,0.25)',
+            borderRadius: 100,
+            color: 'rgba(255,255,255,0.9)',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.95rem', fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.2)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.12)'; e.currentTarget.style.transform = 'none' }}
+        >
+          {current + 1 < questions.length ? 'Next Question →' : 'View Results ✦'}
         </button>
       )}
     </div>
