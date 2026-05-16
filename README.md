@@ -31,15 +31,3 @@ quizai/
 ```
 
 ---
-
-## Nếu gặp lỗi
-
-- **Lỗi "Cannot find module"**: Chạy `npm install` trong thư mục project
-- **Lỗi API key**: Kiểm tra lại Environment Variables trên Vercel
-- **Lỗi database**: Kiểm tra đã chạy SQL schema chưa
-- **Lỗi file quá lớn**: Giới hạn Vercel free tier là 4.5MB/request — nếu cần 20MB, nâng lên Vercel Pro
-
-
-## Câu hỏi?
-
-Chụp màn hình lỗi và hỏi Claude để được hỗ trợ tiếp.
