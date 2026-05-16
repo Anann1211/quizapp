@@ -39,7 +39,7 @@ export default function Home({ user }) {
       setStep('quiz')
       router.replace('/', undefined, { shallow: true })
     } catch (e) {
-      console.error('Resume lỗi:', e)
+      console.error('Resume error:', e)
       router.replace('/')
     }
   }, [router.isReady, router.query.resume, user])
@@ -58,8 +58,8 @@ export default function Home({ user }) {
         body: JSON.stringify({ ...config, previousQuestions, topic: config.topic || '' })
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Lỗi tạo câu hỏi')
-      if (!data.questions?.length) throw new Error('AI không tạo được câu hỏi, thử lại')
+      if (!res.ok) throw new Error(data.error || 'Error generating questions')
+      if (!data.questions?.length) throw new Error('AI could not generate questions, please try again')
       setQuestions(data.questions)
       setQuizType(config.type)
       setStep('quiz')
@@ -84,7 +84,7 @@ export default function Home({ user }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: user.id,
-          file_name: fileConfig?.fileName || 'Tài liệu',
+          file_name: fileConfig?.fileName || 'Document',
           quiz_type: quizType,
           total,
           correct: correct ?? 0,
@@ -93,7 +93,7 @@ export default function Home({ user }) {
           current_index: current_index ?? 0,
           answered_count: answered_count ?? total,
           file_config: fileConfig,
-          answered_map: answeredMap ?? null  // lưu progress chi tiết
+          answered_map: answeredMap ?? null
         })
       })
       if (!res.ok) console.error('Save failed:', await res.text())
@@ -112,7 +112,6 @@ export default function Home({ user }) {
   }
 
   async function handlePause(pauseState) {
-    // isSaving đã được reset bởi caller nếu cần, ta cũng reset ở đây
     isSaving.current = false
     await saveSession({
       correct: pauseState.correct,
@@ -141,41 +140,101 @@ export default function Home({ user }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">Q</span>
-            </div>
-            <span className="font-bold text-gray-800">QuizAI</span>
+    <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      {/* Navbar */}
+      <header style={{
+        position: 'sticky', top: 0, zIndex: 50,
+        background: 'rgba(5,8,16,0.8)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 28, height: 28,
+              background: 'linear-gradient(135deg, rgba(74,158,255,0.3), rgba(139,92,246,0.3))',
+              border: '1px solid rgba(74,158,255,0.25)',
+              borderRadius: 7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12, color: 'rgba(147,210,255,0.9)'
+            }}>✦</div>
+            <span style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: '0.9rem', fontWeight: 500,
+              letterSpacing: '-0.01em',
+              color: 'rgba(255,255,255,0.85)'
+            }}>bloom academy</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/history')} className="text-sm text-gray-500 hover:text-indigo-600 transition">Lịch sử</button>
-            <button onClick={() => supabase.auth.signOut()} className="text-sm text-gray-400 hover:text-red-500 transition">Đăng xuất</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={() => router.push('/history')}
+              style={{
+                padding: '6px 14px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 100,
+                color: 'rgba(255,255,255,0.5)',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={e => { e.target.style.color = 'rgba(255,255,255,0.85)'; e.target.style.borderColor = 'rgba(255,255,255,0.12)' }}
+              onMouseLeave={e => { e.target.style.color = 'rgba(255,255,255,0.5)'; e.target.style.borderColor = 'rgba(255,255,255,0.07)' }}
+            >History</button>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              style={{
+                padding: '6px 14px',
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={e => e.target.style.color = 'rgba(252,165,165,0.8)'}
+              onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.3)'}
+            >Sign out</button>
           </div>
         </div>
       </header>
 
-      {step === 'upload' && (
-        <>
-          {error && (
-            <div className="max-w-2xl mx-auto px-4 pt-4">
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm flex justify-between items-center">
-                <span>⚠️ {error}</span>
-                <button onClick={() => setError('')} className="text-red-400 hover:text-red-600 ml-3">✕</button>
-              </div>
-            </div>
-          )}
-          <UploadStep onReady={handleReady} />
-        </>
+      {/* Error banner */}
+      {error && step === 'upload' && (
+        <div style={{ maxWidth: 960, margin: '16px auto', padding: '0 24px' }}>
+          <div style={{
+            padding: '12px 16px',
+            background: 'rgba(239,68,68,0.08)',
+            border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: 12,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontSize: '0.875rem',
+            color: 'rgba(252,165,165,0.9)'
+          }}>
+            <span>⚠ {error}</span>
+            <button onClick={() => setError('')} style={{ background: 'none', border: 'none', color: 'rgba(252,165,165,0.6)', cursor: 'pointer', fontSize: '1rem', marginLeft: 12 }}>✕</button>
+          </div>
+        </div>
       )}
 
+      {step === 'upload' && <UploadStep onReady={handleReady} />}
+
       {step === 'loading' && (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-          <div className="w-14 h-14 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-gray-600 font-medium">AI đang tạo câu hỏi...</p>
-          <p className="text-sm text-gray-400">Thường mất 10–20 giây</p>
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          minHeight: 'calc(100vh - 60px)', gap: 20
+        }}>
+          <div style={{
+            width: 48, height: 48,
+            border: '2px solid rgba(255,255,255,0.06)',
+            borderTop: '2px solid rgba(74,158,255,0.6)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', fontWeight: 400 }}>AI is generating questions...</p>
+          <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.825rem' }}>Usually takes 10–20 seconds</p>
         </div>
       )}
 
