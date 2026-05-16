@@ -6,78 +6,121 @@ export default function ResultScreen({ result, fileConfig, onContinue, onExport,
   const [nextType, setNextType] = useState('multiple_choice')
   const [showOptions, setShowOptions] = useState(false)
 
-  const grade = score >= 80 ? { label: 'Xuất sắc 🏆', color: 'text-green-600' }
-    : score >= 60 ? { label: 'Khá tốt 👍', color: 'text-indigo-600' }
-    : { label: 'Cần ôn thêm 📚', color: 'text-amber-600' }
+  const grade = score >= 80
+    ? { label: 'Outstanding', icon: '✦', color: 'rgba(110,231,183,0.9)' }
+    : score >= 60
+    ? { label: 'Well done', icon: '◉', color: 'rgba(147,210,255,0.9)' }
+    : { label: 'Keep practicing', icon: '⊕', color: 'rgba(253,230,138,0.9)' }
 
   const types = [
-    { id: 'multiple_choice', label: 'Trắc nghiệm mới' },
-    { id: 'essay', label: 'Tự luận' },
-    { id: 'flashcard', label: 'Flashcard' },
+    { id: 'multiple_choice', label: 'New Multiple Choice' },
+    { id: 'essay', label: 'Essay Questions' },
+    { id: 'flashcard', label: 'Flashcard Deck' },
   ]
 
   return (
-    <div className="max-w-lg mx-auto py-12 px-4 text-center">
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 mb-6">
-        <div className="w-24 h-24 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
-          <span className="text-4xl font-bold text-indigo-600">{score}%</span>
+    <div style={{ maxWidth: 520, margin: '0 auto', padding: '48px 24px', position: 'relative', zIndex: 1 }}>
+      {/* Score card */}
+      <div className="glass-strong" style={{ padding: '40px 32px', marginBottom: 20, textAlign: 'center' }}>
+        <div style={{
+          width: 96, height: 96, borderRadius: '50%', margin: '0 auto 24px',
+          background: 'rgba(74,158,255,0.08)',
+          border: '1px solid rgba(74,158,255,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column'
+        }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.6rem', fontWeight: 700, color: 'rgba(147,210,255,0.95)' }}>{score}%</span>
         </div>
-        <h2 className={`text-2xl font-bold mb-1 ${grade.color}`}>{grade.label}</h2>
-        <p className="text-gray-500 text-sm">
-          Bạn trả lời đúng <strong className="text-gray-700">{correct}/{total}</strong> câu
+        <div style={{ fontSize: '1.2rem', marginBottom: 4, color: grade.color, fontWeight: 500 }}>
+          {grade.icon} {grade.label}
+        </div>
+        <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)', marginBottom: 28 }}>
+          You answered <strong style={{ color: 'rgba(255,255,255,0.75)' }}>{correct} of {total}</strong> questions correctly
         </p>
 
-        <div className="grid grid-cols-3 gap-3 mt-6 text-center">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
           {[
-            { label: 'Tổng câu', val: total, color: 'bg-gray-50' },
-            { label: 'Đúng', val: correct, color: 'bg-green-50 text-green-700' },
-            { label: 'Sai', val: total - correct, color: 'bg-red-50 text-red-600' },
+            { label: 'Total', value: total, color: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.06)', textColor: 'rgba(255,255,255,0.7)' },
+            { label: 'Correct', value: correct, color: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)', textColor: 'rgba(110,231,183,0.9)' },
+            { label: 'Wrong', value: total - correct, color: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.15)', textColor: 'rgba(252,165,165,0.9)' },
           ].map(s => (
-            <div key={s.label} className={`rounded-xl p-3 ${s.color}`}>
-              <div className="text-2xl font-bold">{s.val}</div>
-              <div className="text-xs text-gray-500">{s.label}</div>
+            <div key={s.label} style={{
+              padding: '16px 8px', borderRadius: 14,
+              background: s.color, border: `1px solid ${s.border}`,
+              textAlign: 'center'
+            }}>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.5rem', fontWeight: 700, color: s.textColor, marginBottom: 4 }}>{s.value}</div>
+              <div style={{ fontSize: '0.725rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="space-y-3">
-        <button onClick={() => setShowOptions(!showOptions)}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition">
-          🔄 Tiếp tục luyện tập
-        </button>
+      {/* Actions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          onClick={() => setShowOptions(!showOptions)}
+          style={{
+            width: '100%', padding: '13px',
+            background: 'rgba(74,158,255,0.12)',
+            border: '1px solid rgba(74,158,255,0.25)',
+            borderRadius: 100,
+            color: 'rgba(255,255,255,0.9)',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.95rem', fontWeight: 500,
+            cursor: 'pointer', transition: 'all 0.2s'
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.2)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,158,255,0.12)' }}
+        >↺ Continue Practicing</button>
 
         {showOptions && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 text-left">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Chọn dạng bài tiếp theo:</p>
-            <div className="space-y-2 mb-4">
+          <div className="glass" style={{ padding: 20 }}>
+            <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: 14, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Choose format</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {types.map(t => (
-                <label key={t.id} className="flex items-center gap-3 cursor-pointer">
-                  <input type="radio" name="type" value={t.id}
-                    checked={nextType === t.id}
-                    onChange={() => setNextType(t.id)}
-                    className="accent-indigo-600"
-                  />
-                  <span className="text-sm text-gray-700">{t.label}</span>
+                <label key={t.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  cursor: 'pointer', padding: '10px 12px', borderRadius: 10,
+                  background: nextType === t.id ? 'rgba(74,158,255,0.07)' : 'transparent',
+                  border: `1px solid ${nextType === t.id ? 'rgba(74,158,255,0.2)' : 'transparent'}`,
+                  transition: 'all 0.2s'
+                }}>
+                  <input type="radio" name="type" value={t.id} checked={nextType === t.id} onChange={() => setNextType(t.id)} />
+                  <span style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', fontFamily: "'DM Sans', sans-serif" }}>{t.label}</span>
                 </label>
               ))}
             </div>
-            <button onClick={() => onContinue(nextType)}
-              className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-medium text-sm hover:bg-indigo-700 transition">
-              Bắt đầu →
-            </button>
+            <button onClick={() => onContinue(nextType)} style={{
+              width: '100%', padding: '11px',
+              background: 'rgba(74,158,255,0.15)', border: '1px solid rgba(74,158,255,0.25)',
+              borderRadius: 100, color: 'rgba(255,255,255,0.85)',
+              fontFamily: "'DM Sans', sans-serif", fontSize: '0.875rem', fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.2s'
+            }}>Start →</button>
           </div>
         )}
 
-        <button onClick={onExport}
-          className="w-full py-3 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition">
-          📥 Xuất file câu hỏi (JSON)
-        </button>
+        <button onClick={onExport} style={{
+          width: '100%', padding: '13px',
+          background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 100, color: 'rgba(255,255,255,0.55)',
+          fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', fontWeight: 400,
+          cursor: 'pointer', transition: 'all 0.2s'
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)' }}
+        >↓ Export Questions (JSON)</button>
 
-        <button onClick={onHome}
-          className="w-full py-3 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-50 transition text-sm">
-          Tải tài liệu mới
-        </button>
+        <button onClick={onHome} style={{
+          width: '100%', padding: '11px',
+          background: 'none', border: 'none',
+          color: 'rgba(255,255,255,0.2)', fontSize: '0.875rem',
+          cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'color 0.2s'
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.55)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.2)'}
+        >Upload new document</button>
       </div>
     </div>
   )
