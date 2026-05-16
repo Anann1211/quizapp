@@ -1,17 +1,36 @@
 import '../styles/globals.css'
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
 
 export default function App({ Component, pageProps }) {
-  const [user, setUser] = useState(null)
+  return (
+    <>
+      {/* VIDEO BACKGROUND */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="space-bg"
+      >
+        <source
+          src="/assets/astronaut.mp4"
+          type="video/mp4"
+        />
+      </video>
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null))
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [])
+      {/* OVERLAY */}
+      <div className="space-overlay"></div>
 
-  return <Component {...pageProps} user={user} />
+      {/* STARS */}
+      <div className="stars"></div>
+
+      {/* FLOATING ASTRONAUT */}
+      <img
+        src="/assets/astronaut.png"
+        alt="astronaut"
+        className="astronaut"
+      />
+
+      <Component {...pageProps} />
+    </>
+  )
 }
