@@ -8,9 +8,10 @@ import Essay from '../components/Essay'
 import Flashcard from '../components/Flashcard'
 import ResultScreen from '../components/ResultScreen'
 
-export default function Home({ initialUser }) {
+export default function Home() {
   const router = useRouter()
-  const [user, setUser] = useState(initialUser ?? null)
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [step, setStep] = useState('upload')
   const [fileConfig, setFileConfig] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -21,11 +22,19 @@ export default function Home({ initialUser }) {
   const [allPrevQuestions, setAllPrevQuestions] = useState([])
   const isSaving = useRef(false)
 
-  // ✅ Lắng nghe thay đổi auth (đăng nhập / đăng xuất)
+  // ✅ Lấy session hiện tại + lắng nghe thay đổi auth
   useEffect(() => {
+    // Lấy user đang đăng nhập (nếu có)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+    })
+
+    // Lắng nghe đăng nhập / đăng xuất
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
+
     return () => subscription.unsubscribe()
   }, [])
 
@@ -52,6 +61,9 @@ export default function Home({ initialUser }) {
       router.replace('/')
     }
   }, [router.isReady, router.query.resume, user])
+
+  // Đang kiểm tra session, chưa hiện gì cả
+  if (authLoading) return null
 
   if (!user) return <Auth />
 
@@ -268,34 +280,4 @@ export default function Home({ initialUser }) {
       )}
     </div>
   )
-}
-
-// ✅ Đọc session từ cookie server-side để tránh flash màn hình Auth
-export async function getServerSideProps({ req }) {
-  const { createServerClient } = await import('@supabase/ssr')
-
-  const supabaseServer = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          const cookieHeader = req.headers.cookie || ''
-          return cookieHeader.split(';').map(c => {
-            const [name, ...rest] = c.trim().split('=')
-            return { name, value: rest.join('=') }
-          })
-        },
-        setAll() {}
-      }
-    }
-  )
-
-  const { data: { user } } = await supabaseServer.auth.getUser()
-
-  return {
-    props: {
-      initialUser: user ?? null
-    }
-  }
 }
