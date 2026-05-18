@@ -20,16 +20,6 @@ export default function App({ Component, pageProps }) {
       {/* OVERLAY */}
       <div className="space-overlay"></div>
 
-      {/* STARS */}
-      <div className="stars"></div>
-
-      {/* FLOATING ASTRONAUT */}
-      <img
-        src="/assets/astronaut.png"
-        alt="astronaut"
-        className="astronaut"
-      />
-
       <Component {...pageProps} />
     </>
   )
