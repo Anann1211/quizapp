@@ -8,8 +8,9 @@ import Essay from '../components/Essay'
 import Flashcard from '../components/Flashcard'
 import ResultScreen from '../components/ResultScreen'
 
-export default function Home({ user }) {
+export default function Home({ initialUser }) {
   const router = useRouter()
+  const [user, setUser] = useState(initialUser ?? null)
   const [step, setStep] = useState('upload')
   const [fileConfig, setFileConfig] = useState(null)
   const [questions, setQuestions] = useState([])
@@ -19,6 +20,14 @@ export default function Home({ user }) {
   const [error, setError] = useState('')
   const [allPrevQuestions, setAllPrevQuestions] = useState([])
   const isSaving = useRef(false)
+
+  // ✅ Lắng nghe thay đổi auth (đăng nhập / đăng xuất)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
     if (!router.isReady || !user) return
@@ -259,4 +268,34 @@ export default function Home({ user }) {
       )}
     </div>
   )
+}
+
+// ✅ Đọc session từ cookie server-side để tránh flash màn hình Auth
+export async function getServerSideProps({ req }) {
+  const { createServerClient } = await import('@supabase/ssr')
+
+  const supabaseServer = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          const cookieHeader = req.headers.cookie || ''
+          return cookieHeader.split(';').map(c => {
+            const [name, ...rest] = c.trim().split('=')
+            return { name, value: rest.join('=') }
+          })
+        },
+        setAll() {}
+      }
+    }
+  )
+
+  const { data: { user } } = await supabaseServer.auth.getUser()
+
+  return {
+    props: {
+      initialUser: user ?? null
+    }
+  }
 }
